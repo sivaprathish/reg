@@ -1,0 +1,52 @@
+library(zoo)
+library(ggplot2)
+library(forecast)
+
+data=read.csv("AirlinePassengers.csv")
+data
+data$Month=as.yearmon(data$Month)
+data$Month
+max(data$Month)
+head(data)
+
+test_set_StartDate=as.yearmon("Jan 1959")
+test_set_StartDate
+train_set=subset(data, Month < test_set_StartDate)
+train_set
+test_set=subset(data, Month >= test_set_StartDate)
+test_set
+h=nrow(test_set)
+h
+dim(train_set)
+dim(test_set)
+
+# Visualization
+ggplot() +
+  geom_line(data=train_set,aes(x=Month,y=Passengers,color="Training"),size = 0.5) +
+  geom_line(data=test_set,aes(x=Month,y=Passengers,color="Testing"),size = 0.5) +
+  labs(title="Airline Passengers-Training and Testing",x="Date",y="Passengers") +
+  scale_color_manual(values = c("Training" = "blue", "Testing" = "red"), name = "Airline passengers")+
+  theme_minimal() +
+  theme(plot.title = element_text(size = 20))
+
+# Moving Average with window width w=12
+series_ts=ts(train_set$Passengers,frequency=12)
+series_ts
+
+MA_12=ma(series_ts,order=12,centre=FALSE)
+MA_12
+MA12_forecast=forecast(MA_12,h=nrow(test_set))
+MA12_forecast
+
+MA_forecast_df=data.frame(Month=test_set$Month,MA12=MA12_forecast$mean)
+MA_forecast_df
+
+ggplot() +
+  geom_line(data=train_set,aes(x=Month,y=Passengers,color="Training"),size = 0.5) +
+  geom_line(data=test_set,aes(x=Month,y=Passengers,color="Testing"),size = 0.5) +
+  geom_line(data=MA_forecast_df,aes(x=Month,y=MA12,color="MA12"),size = 0.5) +
+  labs(title="Airline Passengers,Training,Testing,MA12",x="Date",y="Passengers") +
+  scale_color_manual(values = c("Training"="blue","Testing"="red","MA12"="orange"),name = "Airline passengers")+
+  theme_minimal() +
+  theme(plot.title = element_text(size = 20))
+################################################################################
