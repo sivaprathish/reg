@@ -1,0 +1,218 @@
+# Import dataset
+data(cars)
+
+# Summary statistics
+summary(cars)
+
+# Assign variables
+speed = cars$speed
+dist = cars$dist
+
+# Means
+speed_bar = mean(speed)
+dist_bar = mean(dist)
+
+# Standard deviations
+s_speed = sd(speed)
+s_dist = sd(dist)
+
+# Correlation
+r = cor(speed, dist)
+
+# Regression coefficients (OLS)
+b1 = r * (s_dist / s_speed)
+b0 = dist_bar - b1 * speed_bar
+
+b0
+b1
+
+# Scatter plot
+plot(speed, dist,
+     ylab = "Car Stopping Distance (ft)",
+     xlab = "Speed (mph)",
+     main = "Car Speed vs Stopping Distance")
+
+# Linear model
+SLR = lm(dist ~ speed)
+SLR
+
+# Add regression line
+abline(SLR, col = "red")
+
+# Residuals histogram
+residual = SLR$residuals
+hist(residual)
+
+# Residuals vs speed
+plot(SLR$residuals ~ speed)
+abline(h = 0)
+
+# Model summary (R², Adjusted R²)
+summary(SLR)
+
+# ANOVA test
+anova(SLR)
+
+# F critical value
+Ft = qf(0.95, df1 = 1, df2 = 48)
+Ft
+
+# p-value
+pv = 1 - pf(89.567, 1, 48)
+pv
+
+# Confidence intervals
+confint(SLR, level = 0.95)
+
+# Prediction at speed = 15
+newdata = data.frame(speed = 15)
+
+# Confidence interval
+predict(SLR, newdata, interval = "confidence")
+
+# Prediction interval
+predict(SLR, newdata, interval = "predict")
+
+# RESIDUAL ANALYSIS & FORECAST ACCURACY
+
+# Install packages
+install.packages("UsingR")
+library(UsingR)
+
+install.packages("lmtest")
+library(lmtest)
+
+# Load dataset
+df = diamond
+df
+
+# Fit model
+model = lm(df$price ~ df$carat, data = df)
+summary(model)
+
+# Extract values
+obs_val = df$price
+fitted_val = fitted(model)
+residuals = resid(model)
+
+# Residuals vs Fitted
+plot(fitted_val, residuals,
+     xlab = "Fitted Values",
+     ylab = "Residuals",
+     main = "Residuals vs Fitted Values")
+abline(h = 0, lty = 2, col = "red")
+
+# Q-Q Plot
+qqnorm(residuals)
+qqline(residuals, col = "red")
+
+# Shapiro test
+shapiro_test = shapiro.test(residuals)
+shapiro_test
+
+# Durbin-Watson test
+dw_test = dwtest(model)
+dw_test
+
+# Breusch-Pagan test
+bp_test = bptest(model)
+bp_test
+
+# Cook’s Distance
+plot(cooks.distance(model), type = "h", main = "Cook's Distance")
+abline(h = 4/length(residuals), lty = 2, col = "red")
+
+# Forecasting
+new_df = data.frame(X = c(0.10, 0.12, 0.15))
+predicted_future = with(new_df, {coef(model)[1] + coef(model)[2] * X})
+predicted_future
+
+# Accuracy metrics
+MAE = mean(abs(obs_val - fitted_val))
+MSE = mean((obs_val - fitted_val)^2)
+RMSE = sqrt(MSE)
+MAPE = mean(abs((obs_val - fitted_val) / obs_val)) * 100
+R_squared = summary(model)$r.squared
+
+cat("\nForecast Accuracy Measures:\n")
+cat("MAE =", MAE, "\n")
+cat("MSE =", MSE, "\n")
+cat("RMSE =", RMSE, "\n")
+cat("MAPE =", MAPE, "%\n")
+cat("R^2 =", R_squared, "\n")
+
+# Train-Test Split
+df1 = as.data.frame(df)
+set.seed(123)
+
+train_index = sample(1:nrow(df1), 0.8 * nrow(df1))
+
+train_data = df1[train_index, ]
+test_data = df1[-train_index, ]
+
+model_train = lm(train_data$price ~ train_data$carat, data = train_data)
+
+test_pred = with(test_data, {coef(model_train)[1] + coef(model_train)[2] * test_data$carat})
+
+MAE_test = mean(abs(test_data$price - test_pred))
+RMSE_test = sqrt(mean((test_data$price - test_pred)^2))
+MAPE_test = mean(abs((test_data$price - test_pred) / test_data$price)) * 100
+
+cat("\nTest Set Forecast Accuracy:\n")
+cat("MAE =", MAE_test, "\n")
+cat("RMSE =", RMSE_test, "\n")
+cat("MAPE =", MAPE_test, "%\n")
+
+
+# -----------------------------
+# EXPERIMENT 3
+# -----------------------------
+
+data(cars)
+
+# Scatter plot
+scatter.smooth(x = cars$speed, y = cars$dist, main = "Dist Vs Speed")
+
+# Boxplots
+par(mfrow = c(1,2))
+boxplot(cars$speed, main = "Speed",
+        sub = paste("Outliers:", boxplot.stats(cars$speed)$out))
+
+boxplot(cars$dist, main = "Distance",
+        sub = paste("Outliers:", boxplot.stats(cars$dist)$out))
+
+# Correlation
+cor(cars$speed, cars$dist)
+
+# Linear model
+linear_Model = lm(dist ~ speed, data = cars)
+modelSummary = summary(linear_Model)
+
+# Extract coefficients
+modelCoeffs = modelSummary$coefficients
+n = nrow(cars)
+alpha = 0.05
+
+beta_estimate = modelCoeffs["speed", "Estimate"]
+std_error = modelCoeffs["speed", "Std. Error"]
+
+# t-test
+t_value = beta_estimate / std_error
+t_table = qt((alpha/2), n-2, lower.tail = FALSE)
+
+if(t_value > t_table) {
+  print("Reject null hypothesis")
+} else {
+  print("Accept null hypothesis")
+}
+
+# p-value
+p_value = 2 * pt(-abs(t_value), df = nrow(cars) - ncol(cars))
+p_value
+
+# F-test
+f = summary(linear_Model)$fstatistic
+f_table = qf(0.95, df1 = f[2], df2 = f[3])
+
+# Confidence interval
+confint(linear_Model)
