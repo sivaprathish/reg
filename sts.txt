@@ -1,0 +1,79 @@
+# Visualization of Stationary and Non-Stationary Time Series
+
+# Load libraries
+library(tseries)
+
+# ---------------------------
+# Stationary Time Series
+# ---------------------------
+
+set.seed(123)
+
+# Generate stationary data (white noise)
+stationary_series = ts(rnorm(100))
+
+# Plot stationary series
+plot(stationary_series,
+     main = "Stationary Time Series",
+     ylab = "Value",
+     col = "blue")
+
+# ACF plot (should decay quickly)
+acf(stationary_series, main = "ACF - Stationary Series")
+
+# ---------------------------
+# Non-Stationary Time Series
+# ---------------------------
+
+# Generate non-stationary data (random walk)
+non_stationary_series = ts(cumsum(rnorm(100)))
+
+# Plot non-stationary series
+plot(non_stationary_series,
+     main = "Non-Stationary Time Series (Random Walk)",
+     ylab = "Value",
+     col = "red")
+
+# ACF plot (slow decay)
+acf(non_stationary_series, main = "ACF - Non-Stationary Series")
+
+# ---------------------------
+# Stationarity Test (ADF Test)
+# ---------------------------
+
+# For stationary series
+adf_test1 = adf.test(stationary_series)
+adf_test1
+
+# For non-stationary series
+adf_test2 = adf.test(non_stationary_series)
+adf_test2
+
+# ---------------------------
+# Make Non-Stationary → Stationary
+# ---------------------------
+
+# Differencing
+diff_series = diff(non_stationary_series)
+
+# Plot differenced series
+plot(diff_series,
+     main = "Differenced Series (Now Stationary)",
+     col = "green")
+
+# ACF after differencing
+acf(diff_series, main = "ACF after Differencing")
+
+# ADF test after differencing
+adf_test3 = adf.test(diff_series)
+
+Stationary series → constant mean & variance
+Non-stationary → trend/random walk
+ACF:
+Stationary → drops quickly
+Non-stationary → slow decay
+ADF Test:
+p < 0.05 → Stationary
+p > 0.05 → Non-stationary
+Differencing → converts non-stationary → stationary
+adf_test3
