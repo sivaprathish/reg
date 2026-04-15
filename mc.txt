@@ -1,0 +1,67 @@
+# Load necessary libraries
+library(car)
+library(olsrr)
+library(corrplot)
+library(lmtest)
+library(glmnet)
+
+# Load dataset
+data(mtcars)
+
+# Fit model
+model = lm(mpg ~ ., data = mtcars)
+model
+
+# Diagnostic plots
+par(mfrow = c(2,3))
+plot(model, which = 1:6)
+par(mfrow = c(1,1))
+
+# Studentized residuals (outliers)
+stud_resid = rstudent(model)
+outliers = which(abs(stud_resid) > 2)
+cat("Potential outliers:", outliers, "\n")
+
+# Cook's Distance
+cooks_d = cooks.distance(model)
+influential = which(cooks_d > 4 / nrow(mtcars))
+cat("Influential observations:", influential, "\n")
+
+# Durbin-Watson test
+dwtest_result = dwtest(model)
+dwtest_result
+
+# VIF
+vif_values = vif(model)
+vif_values
+
+# Detailed VIF
+ols_vif_tol(model)
+
+# Correlation matrix
+cor_matrix = cor(mtcars[, c("cyl","disp","hp","drat","wt","qsec","vs","am","gear","carb")])
+corrplot(cor_matrix, method = "number")
+
+# High VIF variables
+high_vif = names(vif_values[vif_values > 5])
+cat("Variables with VIF > 5:", paste(high_vif, collapse = ", "), "\n")
+
+# Clean model (removed high VIF variables)
+model_clean = lm(mpg ~ drat + vs + am, data = mtcars)
+summary(model_clean)
+vif(model_clean)
+
+# Ridge regression
+x = as.matrix(mtcars[, c("cyl","disp","hp","drat","wt","qsec","vs","am","gear","carb")])
+y = mtcars$mpg
+
+ridge_model = cv.glmnet(x, y, alpha = 0)
+coef(ridge_model)
+
+# Variable selection
+final_model = step(model_clean, direction = "both", trace = 0)
+summary(final_model)
+
+# Prediction
+new_data = data.frame(vs = 0, am = 1)
+predict(final_model, newdata = new_data, interval = "confidence")
