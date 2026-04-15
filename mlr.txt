@@ -1,0 +1,78 @@
+# MULTIPLE REGRESSION
+
+# Load dataset
+data(mtcars)
+
+head(mtcars)
+names(mtcars)
+
+# Full model
+model = lm(mpg ~ cyl + disp + hp + drat + wt + qsec + vs + am + gear + carb, data = mtcars)
+model
+
+# Summary
+summary(model)
+
+# Confidence interval
+confint(model, level = 0.95)
+
+# t-test for coefficient
+teststat = coef(summary(model))[3,1] / coef(summary(model))[3,2]
+teststat
+
+# p-value
+2 * pt(teststat, 21, lower.tail = FALSE)
+
+# Test for intercept
+teststat1 = coef(summary(model))[1,1] / coef(summary(model))[1,2]
+teststat1
+
+2 * pt(teststat1, 21, lower.tail = FALSE)
+
+# Residual analysis
+residuals = model$residuals
+hist(residuals)
+
+qqnorm(residuals)
+qqline(residuals)
+
+# Homoscedasticity
+plot(model$residuals ~ mtcars$disp)
+abline(h = 0)
+
+# Diagnostic plots
+plot(model)
+
+# Model transformation
+model1 = lm(mpg ~ cyl + log(disp) + log(hp) + drat + wt + qsec + vs + am + gear + carb, data = mtcars)
+summary(model1)
+
+plot(model1)
+
+# Variable selection using AIC
+library(MASS)
+
+stepAIC(model)
+stepAIC(model1)
+
+# Reduced models
+model2 = lm(mpg ~ qsec + wt + am, data = mtcars)
+summary(model2)
+
+model3 = lm(mpg ~ log(disp) + gear + carb, data = mtcars)
+summary(model3)
+
+# Interaction model
+model4 = lm(mpg ~ qsec + wt * am, data = mtcars)
+summary(model4)
+
+AIC(model4)
+
+# Prediction
+new_values = data.frame(wt = 2.92, qsec = 20.1, am = 1)
+
+pred_y = predict(model2, new_values, interval = "predict")
+pred_y
+
+conf_y = predict(model2, new_values, interval = "confidence")
+conf_y
