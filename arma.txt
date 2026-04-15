@@ -1,0 +1,113 @@
+# Load libraries
+library(forecast)
+library(tseries)
+library(ggplot2)
+library(lmtest)
+
+# -----------------------
+# AR Model Selection using AIC
+# -----------------------
+
+data("USAccDeaths")
+ts_data = USAccDeaths
+
+aic_values = numeric(10)
+
+for(p in 1:10)
+{
+  model = arima(ts_data, order = c(p,0,0))
+  aic_values[p] = AIC(model)
+}
+
+# Plot AIC
+plot(1:10, aic_values, type = "b",
+     main = "AIC Values for Different AR Orders",
+     xlab = "AR Order (p)", ylab = "AIC")
+
+best_order = which.min(aic_values)
+cat("Best AR order:", best_order, "\n")
+
+# Fit best model (you used 9 → keeping dynamic is better)
+ar_model = arima(ts_data, order = c(best_order,0,0))
+
+# ADF Test
+adf_test = adf.test(ts_data)
+adf_test
+
+# ACF & PACF
+acf(ts_data)
+pacf(ts_data)
+
+# Forecast
+forecast_model = forecast(ar_model, h = 12)
+plot(forecast_model)
+
+# -----------------------
+# Plotting Actual vs Fitted
+# -----------------------
+
+n = length(ts_data)   # ✅ FIX (missing in your code)
+
+plot_df = data.frame(
+  Time = 1:n,
+  Actual = as.numeric(ts_data),
+  Fitted = as.numeric(fitted(ar_model)),
+  Residuals = as.numeric(residuals(ar_model))
+)
+
+# Actual vs Fitted
+ggplot(plot_df, aes(x = Time)) +
+  geom_line(aes(y = Actual, color = "Actual")) +
+  geom_line(aes(y = Fitted, color = "Fitted"), linetype = "dashed") +
+  labs(title = "AR Model: Actual vs Fitted") +
+  theme_minimal()
+
+# Residual plot
+ggplot(plot_df, aes(x = Time, y = Residuals)) +
+  geom_line() +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(title = "Residuals") +
+  theme_minimal()
+
+# -----------------------
+# AIR PASSENGERS (ARIMA)
+# -----------------------
+
+data("AirPassengers")
+ts_data = AirPassengers
+
+# Plot
+autoplot(ts_data) +
+  ggtitle("AirPassengers Data")
+
+# ADF Test
+adf_test = adf.test(ts_data)
+adf_test
+
+# Differencing
+ts_diff = diff(ts_data)
+
+autoplot(ts_diff) +
+  ggtitle("Differenced Series")
+
+# ADF after differencing
+adf_test_diff = adf.test(ts_diff)
+adf_test_diff
+
+# Auto ARIMA
+auto_model = auto.arima(ts_data,
+                        seasonal = TRUE,
+                        stepwise = FALSE,
+                        approximation = FALSE,
+                        trace = TRUE)
+
+summary(auto_model)
+
+# Diagnostics
+checkresiduals(auto_model)
+
+# Forecast
+forecast_values = forecast(auto_model, h = 24)
+
+autoplot(forecast_values) +
+  ggtitle("ARIMA Forecast")
