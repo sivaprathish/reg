@@ -1,0 +1,95 @@
+# Load libraries
+library(zoo)
+library(ggplot2)
+library(forecast)
+
+# Read data
+data = read.csv("AirlinePassengers.csv")
+
+# Convert Month
+data$Month = as.yearmon(data$Month)
+
+# Train-Test Split
+test_set_StartDate = as.yearmon("Jan 1959")
+
+train_set = subset(data, Month < test_set_StartDate)
+test_set = subset(data, Month >= test_set_StartDate)
+
+h = nrow(test_set)
+
+# Convert to time series
+series_ts = ts(train_set$Passengers, frequency = 12)
+
+# -----------------------
+# Visualization
+# -----------------------
+ggplot() +
+  geom_line(data = train_set, aes(x = Month, y = Passengers, color = "Training"), size = 0.5) +
+  geom_line(data = test_set, aes(x = Month, y = Passengers, color = "Testing"), size = 0.5) +
+  labs(title = "Airline Passengers-Training and Testing", x = "Date", y = "Passengers") +
+  scale_color_manual(values = c("Training" = "blue", "Testing" = "red")) +
+  theme_minimal()
+
+# -----------------------
+# Exponential Smoothing
+# -----------------------
+
+# Simple ES
+SES = HoltWinters(series_ts, beta = FALSE, gamma = FALSE)
+
+# Double ES
+DES = HoltWinters(series_ts, gamma = FALSE)
+
+# Triple ES
+TES = HoltWinters(series_ts)
+
+# Forecasts
+SES_forecast = forecast(SES, h = h)
+DES_forecast = forecast(DES, h = h)
+TES_forecast = forecast(TES, h = h)
+
+# Combine forecasts
+ESM_forecast_df = data.frame(
+  Month = test_set$Month,
+  SES = SES_forecast$mean,
+  DES = DES_forecast$mean,
+  TES = TES_forecast$mean
+)
+
+# Plot forecasts
+ggplot() +
+  geom_line(data = train_set, aes(x = Month, y = Passengers, color = "Training"), size = 0.5) +
+  geom_line(data = test_set, aes(x = Month, y = Passengers, color = "Testing"), size = 0.5) +
+  geom_line(data = ESM_forecast_df, aes(x = Month, y = SES, color = "SES"), size = 0.5) +
+  geom_line(data = ESM_forecast_df, aes(x = Month, y = DES, color = "DES"), size = 0.5) +
+  geom_line(data = ESM_forecast_df, aes(x = Month, y = TES, color = "TES"), size = 0.5) +
+  scale_color_manual(values = c("Training"="blue","Testing"="red","SES"="orange","DES"="purple","TES"="green")) +
+  theme_minimal()
+
+# -----------------------
+# Seasonal Models
+# -----------------------
+
+TES_Seasonal_ADD = HoltWinters(series_ts, seasonal = "additive")
+TES_Seasonal_MUL = HoltWinters(series_ts, seasonal = "multiplicative")
+
+TES_ADD_Forecast = forecast(TES_Seasonal_ADD, h = h)
+TES_MUL_Forecast = forecast(TES_Seasonal_MUL, h = h)
+
+# Combine
+ESM_TES_Forecast_df = data.frame(
+  Month = test_set$Month,
+  TES = TES_forecast$mean,
+  TESADD = TES_ADD_Forecast$mean,
+  TESMUL = TES_MUL_Forecast$mean
+)
+
+# Plot seasonal comparison
+ggplot() +
+  geom_line(data = train_set, aes(x = Month, y = Passengers, color = "Training"), size = 0.5) +
+  geom_line(data = test_set, aes(x = Month, y = Passengers, color = "Testing"), size = 0.5) +
+  geom_line(data = ESM_TES_Forecast_df, aes(x = Month, y = TES, color = "TES"), size = 0.5) +
+  geom_line(data = ESM_TES_Forecast_df, aes(x = Month, y = TESADD, color = "TESADD"), size = 0.5) +
+  geom_line(data = ESM_TES_Forecast_df, aes(x = Month, y = TESMUL, color = "TESMUL"), size = 0.5) +
+  scale_color_manual(values = c("Training"="blue","Testing"="red","TES"="cyan","TESADD"="darkgreen","TESMUL"="brown")) +
+  theme_minimal()
