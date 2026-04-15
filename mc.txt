@@ -62,6 +62,46 @@ coef(ridge_model)
 final_model = step(model_clean, direction = "both", trace = 0)
 summary(final_model)
 
+----------------------------------------------------------------------------------------------------------------------------------------------------
+# Load libraries
+library(car)
+library(olsrr)
+library(corrplot)
+library(lmtest)
+library(glmnet)
+
+# Load dataset
+data(mtcars)
+
+# Full model
+model = lm(mpg ~ ., data = mtcars)
+
+# VIF check
+vif_values = vif(model)
+vif_values
+
+# Identify high VIF variables
+high_vif = names(vif_values[vif_values > 5])
+high_vif
+
+# Remove high VIF variables manually (example)
+model_clean = lm(mpg ~ drat + vs + am, data = mtcars)
+summary(model_clean)
+
+# Check VIF again
+vif(model_clean)
+
+# Correlation plot
+cor_matrix = cor(mtcars[, c("cyl","disp","hp","drat","wt","qsec","vs","am","gear","carb")])
+corrplot(cor_matrix, method = "number")
+
+# Ridge regression (best solution for MC)
+x = as.matrix(mtcars[, c("cyl","disp","hp","drat","wt","qsec","vs","am","gear","carb")])
+y = mtcars$mpg
+
+ridge_model = cv.glmnet(x, y, alpha = 0)
+coef(ridge_model)
+
 # Prediction
 new_data = data.frame(vs = 0, am = 1)
 predict(final_model, newdata = new_data, interval = "confidence")
