@@ -1,0 +1,78 @@
+# Load libraries
+library(zoo)
+library(ggplot2)
+library(forecast)
+
+# Read data
+data = read.csv("AirlinePassengers.csv")
+
+# Convert Month
+data$Month = as.yearmon(data$Month)
+
+# Train-Test Split
+test_set_StartDate = as.yearmon("Jan 1959")
+
+train_set = subset(data, Month < test_set_StartDate)
+test_set = subset(data, Month >= test_set_StartDate)
+
+h = nrow(test_set)
+
+series_ts = ts(train_set$Passengers, frequency = 12)
+
+# -----------------------
+# Visualization
+# -----------------------
+ggplot() +
+  geom_line(data = train_set, aes(x = Month, y = Passengers, color = "Training"), size = 0.5) +
+  geom_line(data = test_set, aes(x = Month, y = Passengers, color = "Testing"), size = 0.5) +
+  labs(title = "Airline Passengers-Training and Testing", x = "Date", y = "Passengers") +
+  scale_color_manual(values = c("Training" = "blue", "Testing" = "red")) +
+  theme_minimal()
+
+# -----------------------
+# ARIMA Models
+# -----------------------
+
+AR_MODEL = Arima(series_ts, order = c(1,0,0))
+MA_MODEL = Arima(series_ts, order = c(0,0,1))
+ARMA_MODEL = Arima(series_ts, order = c(1,0,1))
+ARIMA_MODEL = Arima(series_ts, order = c(1,1,1))
+
+AUTO_ARIMA_NO_SEASON_MODEL = auto.arima(series_ts, seasonal = FALSE)
+AUTO_ARIMA_SEASON_MODEL = auto.arima(series_ts, seasonal = TRUE)
+
+# Forecasts
+AR_FORECASTS = forecast(AR_MODEL, h = h)
+MA_FORECASTS = forecast(MA_MODEL, h = h)
+ARMA_FORECASTS = forecast(ARMA_MODEL, h = h)
+ARIMA_FORECASTS = forecast(ARIMA_MODEL, h = h)
+AUTO_ARIMA_NO_SEASON_FORECASTS = forecast(AUTO_ARIMA_NO_SEASON_MODEL, h = h)
+AUTO_ARIMA_SEASON_FORECASTS = forecast(AUTO_ARIMA_SEASON_MODEL, h = h)
+
+# Combine forecasts
+ARIMA_FORECAST_DF = data.frame(
+  Month = test_set$Month,
+  AR = AR_FORECASTS$mean,
+  MA = MA_FORECASTS$mean,
+  ARMA = ARMA_FORECASTS$mean,
+  ARIMA = ARIMA_FORECASTS$mean,
+  AutoARIMANoSeason = AUTO_ARIMA_NO_SEASON_FORECASTS$mean,
+  AutoARIMASeason = AUTO_ARIMA_SEASON_FORECASTS$mean
+)
+
+# Plot
+ggplot() +
+  geom_line(data = train_set, aes(x = Month, y = Passengers, color = "Training"), size = 0.5) +
+  geom_line(data = test_set, aes(x = Month, y = Passengers, color = "Testing"), size = 0.5) +
+  geom_line(data = ARIMA_FORECAST_DF, aes(x = Month, y = AR, color = "AR"), size = 0.5) +
+  geom_line(data = ARIMA_FORECAST_DF, aes(x = Month, y = MA, color = "MA"), size = 0.5) +
+  geom_line(data = ARIMA_FORECAST_DF, aes(x = Month, y = ARMA, color = "ARMA"), size = 0.5) +
+  geom_line(data = ARIMA_FORECAST_DF, aes(x = Month, y = ARIMA, color = "ARIMA"), size = 0.5) +
+  geom_line(data = ARIMA_FORECAST_DF, aes(x = Month, y = AutoARIMANoSeason, color = "AutoARIMANoSeason"), size = 0.5) +
+  geom_line(data = ARIMA_FORECAST_DF, aes(x = Month, y = AutoARIMASeason, color = "AutoARIMASeason"), size = 0.5) +
+  scale_color_manual(values = c(
+    "Training"="blue","Testing"="red","AR"="cyan","MA"="darkgreen",
+    "ARMA"="brown","ARIMA"="yellow",
+    "AutoARIMANoSeason"="purple","AutoARIMASeason"="coral"
+  )) +
+  theme_minimal()
