@@ -1,0 +1,33 @@
+# Load required libraries
+library(ggplot2)
+library(forecast)
+
+# Load the AirPassengers dataset
+data("AirPassengers")
+AirPassengers
+
+# Plot the original dataset (shows trend & seasonality)
+P1 <- autoplot(AirPassengers) +
+  ggtitle("AirPassengers Dataset\n(non-stationary: Trend & Seasonality)") +
+  ylab("Passengers") +
+  xlab("Year") +
+  theme_minimal()
+
+# Plot after first differencing (removes trend, makes series stationary)
+P2 <- autoplot(diff(AirPassengers, differences = 1)) +
+  ggtitle("After First Differencing\n(stationary)") +
+  ylab("Change in passengers") +
+  xlab("Year") +
+  theme_minimal()
+
+# Plot after seasonal differencing (removes seasonality)
+P3 <- autoplot(diff(AirPassengers, lag = 12, differences = 1)) +
+  ggtitle("After Seasonal Differencing\n(Removed Seasonality)") +
+  ylab("Seasonal Difference") +
+  xlab("Year") +
+  theme_minimal()
+
+# Display plots
+P1
+P2
+P3
