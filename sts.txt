@@ -77,3 +77,29 @@ p < 0.05 → Stationary
 p > 0.05 → Non-stationary
 Differencing → converts non-stationary → stationary
 adf_test3
+-------------------------------------------------------------------------------------------------------------------------------
+# Example 1
+# Number of births per month in New York city, from January 1946 to December 1959
+births=scan("http://robjhyndman.com/tsdldata/data/nybirths.dat")
+births
+births_TS=ts(births,frequency=12,start=c(1946,1))
+births_TS
+plot.ts(births_TS)
+# Example 2
+# The Augmented Dickey-Fuller (ADF) test is a statistical test used to determine
+# if a time series is stationary or has a unit root (non-stationary).
+# It tests the null hypothesis that a unit root is present, implying
+# non-stationarity.If the p-value is less than or equal to 0.05,
+# the null hypothesis is rejected, indicating the series is stationary
+library(aTSA)
+plot(AirPassengers)
+adf.test(AirPassengers)
+log(AirPassengers)
+plot(log(AirPassengers))
+adf.test(log(AirPassengers))
+diff(log(AirPassengers))
+plot(diff(log(AirPassengers)))
+adf.test(diff(log(AirPassengers)))
+diff(diff(log(AirPassengers)))
+plot(diff(diff(log(AirPassengers))))
+adf.test(diff(diff(log(AirPassengers))))
